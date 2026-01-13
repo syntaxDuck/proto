@@ -3,19 +3,6 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/termios.h>
-#include <termios.h>
-#include <time.h>
-#include <unistd.h>
-
 #include "fileio.h"
 #include "input.h"
 #include "output.h"

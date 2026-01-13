@@ -27,6 +27,7 @@ struct editorConfig {
   struct editorSyntax *syntax;
   struct termios orig_termios;
 };
+
 struct editorConfig E;
 
 #endif
