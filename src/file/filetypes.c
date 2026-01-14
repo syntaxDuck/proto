@@ -1,5 +1,5 @@
-#include "filetypes.h"
-#include "syntax_highlighting.h"
+#include "internal/filetypes.h"
+#include "internal/syntax_highlighting.h"
 
 char *C_HL_extensions[] = {".c", ".h", ".cpp", NULL};
 char *C_HL_keywords[] = {"switch",    "if",      "while",   "for",    "break",

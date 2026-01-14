@@ -3,6 +3,7 @@
 
 #define ESC_SEQ_BUFFER_SIZE 3
 #define CURSOR_POS_MAX "\x1b[999C\x1b[999B"
+#define CURSOR_POS_MAX_LEN 12
 
 void termDie(const char *s);
 void termDisableRawMode();

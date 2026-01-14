@@ -6,7 +6,7 @@
 #include <termios.h>
 #include <time.h>
 
-#define TXTM_VERISON "0.0.1"
+#define TXTM_VERSION "0.0.1"
 #define TAB_STOP 8
 
 struct editorConfig {
@@ -26,6 +26,6 @@ struct editorConfig {
   struct termios orig_termios;
 };
 
-struct editorConfig E;
+extern struct editorConfig E;
 
 #endif

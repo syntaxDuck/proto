@@ -1,8 +1,8 @@
-#include "output.h"
-#include "ansi.h"
-#include "append.h"
-#include "state.h"
-#include "syntax_highlighting.h"
+#include "proto/output.h"
+#include "internal/ansi.h"
+#include "internal/append.h"
+#include "internal/state.h"
+#include "internal/syntax_highlighting.h"
 
 #include <ctype.h>
 #include <stdarg.h>
@@ -14,7 +14,7 @@
 static void drawWelcomeBanner(struct abuf *ab) {
   char welcome[STATUS_BUFFER_SIZE];
   int welcomelen = snprintf(welcome, sizeof(welcome),
-                            "Kilo editor -- version %s", TXTM_VERISON);
+                            "Kilo editor -- version %s", TXTM_VERSION);
   if (welcomelen > E.screencols)
     welcomelen = E.screencols;
   int padding = (E.screencols - welcomelen) / 2;

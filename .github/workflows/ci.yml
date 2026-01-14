@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
+        compiler: [gcc, clang]
+        
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+        
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+          -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build-type }}
+      
+    - name: Test
+      run: |
+        if [ -f build/test ]; then
+          ctest --test-dir build --output-on-failure
+        fi
+        
+    - name: Format check
+      run: |
+        clang-format --version
+        find . -name '*.c' -o -name '*.h' | xargs clang-format --dry-run --Werror

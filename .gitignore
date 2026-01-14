@@ -1,3 +1,18 @@
+# Build directories
+build/
+build-*/
+
+# Cache directories
 .cache/
-build/*
-*.dSYM
+*.dSYM/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Development files
+.clangd/
+compile_commands.json

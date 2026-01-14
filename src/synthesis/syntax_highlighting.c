@@ -1,6 +1,6 @@
-#include "syntax_highlighting.h"
-#include "filetypes.h"
-#include "state.h"
+#include "internal/syntax_highlighting.h"
+#include "internal/filetypes.h"
+#include "internal/state.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>

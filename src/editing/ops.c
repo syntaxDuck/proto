@@ -1,6 +1,6 @@
-#include "ops.h"
-#include "row.h"
-#include "state.h"
+#include "internal/ops.h"
+#include "internal/row.h"
+#include "internal/state.h"
 
 void editorInsertChar(int c) {
   if (E.cy == E.numrows) {

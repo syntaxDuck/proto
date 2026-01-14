@@ -1,7 +1,7 @@
-#include "find.h"
-#include "input.h"
-#include "state.h"
-#include "syntax_highlighting.h"
+#include "internal/find.h"
+#include "proto/input.h"
+#include "internal/state.h"
+#include "internal/syntax_highlighting.h"
 
 #include <stdlib.h>
 #include <string.h>

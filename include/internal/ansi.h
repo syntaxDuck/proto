@@ -1,3 +1,6 @@
+#ifndef ANSI_H
+#define ANSI_H
+
 #include <stdlib.h>
 
 // Control Characters
@@ -21,3 +24,5 @@
 #define ANSI_ERASE_SCREEN "\x1b[2J"
 
 size_t ansiWriteEscCode(char *code);
+
+#endif

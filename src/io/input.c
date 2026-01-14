@@ -1,11 +1,11 @@
-#include "input.h"
-#include "ansi.h"
-#include "fileio.h"
-#include "find.h"
-#include "ops.h"
-#include "output.h"
-#include "state.h"
-#include "terminal.h"
+#include "proto/input.h"
+#include "internal/ansi.h"
+#include "proto/fileio.h"
+#include "internal/find.h"
+#include "internal/ops.h"
+#include "proto/output.h"
+#include "internal/state.h"
+#include "proto/terminal.h"
 
 #include <ctype.h>
 #include <math.h>

@@ -1,9 +1,9 @@
-#include "fileio.h"
-#include "input.h"
-#include "output.h"
-#include "state.h"
-#include "syntax_highlighting.h"
-#include "terminal.h"
+#include "proto/fileio.h"
+#include "proto/input.h"
+#include "proto/output.h"
+#include "internal/state.h"
+#include "internal/syntax_highlighting.h"
+#include "proto/terminal.h"
 
 #include <errno.h>
 #include <fcntl.h>

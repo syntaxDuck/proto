@@ -1,4 +1,4 @@
-#include "append.h"
+#include "internal/append.h"
 #include <stdlib.h>
 #include <string.h>
 

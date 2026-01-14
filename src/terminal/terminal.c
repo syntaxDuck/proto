@@ -1,8 +1,8 @@
-#include "terminal.h"
-#include "ansi.h"
-#include "input.h"
-#include "output.h"
-#include "state.h"
+#include "proto/terminal.h"
+#include "internal/ansi.h"
+#include "proto/input.h"
+#include "proto/output.h"
+#include "internal/state.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -31,7 +31,7 @@ void termEnableRawMode() {
 
   struct termios raw = E.orig_termios;
 
-  // tcgetattr(STDIN_FILENO, &raw);
+
   raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
   raw.c_oflag &= ~(OPOST);
   raw.c_cflag |= (CS8);
@@ -137,7 +137,7 @@ int termGetWindowSize(int *rows, int *cols) {
   struct winsize ws;
 
   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-    if (write(STDOUT_FILENO, CURSOR_POS_MAX, 12) != 12)
+    if (write(STDOUT_FILENO, CURSOR_POS_MAX, CURSOR_POS_MAX_LEN) != CURSOR_POS_MAX_LEN)
       return -1;
     return termGetCursorPosition(rows, cols);
   } else {

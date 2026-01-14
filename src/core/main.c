@@ -3,11 +3,13 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include "fileio.h"
-#include "input.h"
-#include "output.h"
-#include "state.h"
-#include "terminal.h"
+#include "proto/fileio.h"
+#include "proto/input.h"
+#include "proto/output.h"
+#include "internal/state.h"
+#include "proto/terminal.h"
+
+struct editorConfig E;
 
 void initEditor() {
   E.cx = 0;

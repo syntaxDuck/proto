@@ -1,6 +1,6 @@
-#include "row.h"
-#include "state.h"
-#include "syntax_highlighting.h"
+#include "internal/row.h"
+#include "internal/state.h"
+#include "internal/syntax_highlighting.h"
 
 #include <string.h>
 
@@ -38,6 +38,13 @@ void editorUpdateRow(erow *row) {
 
   free(row->render);
   row->render = malloc(row->size + tabs * (TAB_STOP - 1) + 1);
+  if (row->render == NULL) {
+    row->render = malloc(1); // fallback minimal allocation
+    if (row->render == NULL) return;
+    row->render[0] = '\0';
+    row->rsize = 0;
+    return;
+  }
 
   int idx = 0;
   for (j = 0; j < row->size; j++) {
@@ -60,7 +67,9 @@ void editorInsertRow(int at, char *s, size_t len) {
   if (at < 0 || at > E.numrows)
     return;
 
-  E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
+  erow *new_row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
+  if (new_row == NULL) return;
+  E.row = new_row;
   memmove(&E.row[at + 1], &E.row[at], sizeof(erow) * (E.numrows - at));
   for (int j = at + 1; j <= E.numrows; j++)
     E.row[j].idx++;
@@ -69,6 +78,7 @@ void editorInsertRow(int at, char *s, size_t len) {
 
   E.row[at].size = len;
   E.row[at].chars = malloc(len + 1);
+  if (E.row[at].chars == NULL) return;
   memcpy(E.row[at].chars, s, len);
   E.row[at].chars[len] = '\0';
 
@@ -86,6 +96,9 @@ void editorFreeRow(erow *row) {
   free(row->render);
   free(row->chars);
   free(row->hl);
+  row->render = NULL;
+  row->chars = NULL;
+  row->hl = NULL;
 }
 
 void editorDelRow(int at) {
