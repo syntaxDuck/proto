@@ -1,4 +1,5 @@
 #include "input.h"
+#include "ansi.h"
 #include "fileio.h"
 #include "find.h"
 #include "ops.h"
@@ -7,11 +8,13 @@
 #include "terminal.h"
 
 #include <ctype.h>
+#include <math.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 //  Private Functions //
-void moveCursor(int key) {
+static void moveCursor(int key) {
   erow *row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
 
   switch (key) {
@@ -43,10 +46,54 @@ void moveCursor(int key) {
     break;
   }
 
-  row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+  if (key == ARROW_UP || key == ARROW_DOWN ||
+      (key == ARROW_LEFT && E.cx == 0) ||
+      (key == ARROW_RIGHT && row && E.cx == row->size)) {
+    row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+  }
   int rowlen = row ? row->size : 0;
   if (E.cx > rowlen) {
     E.cx = rowlen;
+  }
+}
+
+static bool handleQuitRequest(int *count) {
+  if (E.dirty && *count > 0) {
+    outputSetStatusMessage(QUIT_WARNING, *count);
+    *count = *count - 1;
+    return false;
+  }
+
+  termDisableRawMode();
+  ansiWriteEscCode(ANSI_ERASE_SCREEN);
+  ansiWriteEscCode(ANSI_CURSOR_HOME);
+  exit(0);
+}
+
+// TODO: Page down function is broken
+static void handlePageNavigation(int direction) {
+  if (direction == PAGE_UP) {
+    // Move to top of visible area, but not above document start
+    int target_y = (E.rowoff >= E.screenrows) ? E.rowoff - E.screenrows + 1 : 0;
+
+    // Calculate how many lines to move
+    int lines_to_move = E.cy - target_y;
+    for (int i = 0; i < lines_to_move; i++) {
+      moveCursor(ARROW_UP);
+    }
+  } else { // PAGE_DOWN
+    // Calculate target position: bottom of visible area, but not beyond
+    // document
+    int target_y = E.rowoff + E.screenrows - 1;
+    if (target_y >= E.numrows) {
+      target_y = E.numrows - 1;
+    }
+
+    // Calculate how many lines to move
+    int lines_to_move = target_y - E.cy;
+    for (int i = 0; i < lines_to_move; i++) {
+      moveCursor(ARROW_DOWN);
+    }
   }
 }
 
@@ -54,6 +101,9 @@ void moveCursor(int key) {
 char *inputHandlePrompt(char *prompt, void (*callback)(char *, int)) {
   size_t bufsize = PROMPT_BUFFER_SIZE;
   char *buf = malloc(bufsize);
+  if (!buf) {
+    return NULL;
+  }
 
   size_t buflen = 0;
   buf[0] = '\0';
@@ -61,7 +111,7 @@ char *inputHandlePrompt(char *prompt, void (*callback)(char *, int)) {
     outputSetStatusMessage(prompt, buf);
     outputRefreshScreen();
 
-    int c = editorReadKey();
+    int c = termReadKey();
     // Backspace condition
     switch (c) {
     case DEL_KEY:
@@ -86,13 +136,14 @@ char *inputHandlePrompt(char *prompt, void (*callback)(char *, int)) {
       break;
     default:
       if (!iscntrl(c) && c < ASCII_CHAR_LIMIT) {
-        if (buflen == bufsize - 1) {
-          bufsize *= 2;
-          buf = realloc(buf, bufsize);
-          if (!buf) {
+        if (buflen == bufsize - 1 && bufsize < MAX_PROMPT_SIZE) {
+          bufsize = fmin(bufsize *= 2, MAX_PROMPT_SIZE);
+          char *new_buf = realloc(buf, bufsize);
+          if (!new_buf) {
             free(buf);
             return NULL;
           }
+          buf = new_buf;
         }
         buf[buflen++] = c;
         buf[buflen] = '\0';
@@ -105,25 +156,17 @@ char *inputHandlePrompt(char *prompt, void (*callback)(char *, int)) {
 }
 
 void inputProcessKeypress() {
-  static int quit_times = QUIT_TIMES;
-  int c = editorReadKey();
+  static int quit_times = QUIT_TIMES_DEFAULT;
+  int c = termReadKey();
 
   switch (c) {
   case ANSI_CR:
     editorInsertNewline();
     break;
+
   case CTRL_KEY('q'):
-    if (E.dirty && quit_times > 0) {
-      outputSetStatusMessage("WARNING!!! File has unsaved changes. Press "
-                             "Ctrl-Q %d more times to quit.",
-                             quit_times);
-      quit_times--;
-      return;
-    }
-    write(STDOUT_FILENO, ANSI_ERASE_SCREEN, sizeof(ANSI_ERASE_SCREEN));
-    write(STDOUT_FILENO, ANSI_CURSOR_HOME, sizeof(ANSI_CURSOR_HOME));
-    exit(0);
-    break;
+    handleQuitRequest(&quit_times);
+    return;
 
   case CTRL_KEY('s'):
     editorSave();
@@ -150,18 +193,9 @@ void inputProcessKeypress() {
     break;
 
   case PAGE_UP:
-  case PAGE_DOWN: {
-    if (c == PAGE_UP) {
-      E.cy = E.rowoff;
-    } else if (c == PAGE_DOWN) {
-      E.cy = E.rowoff + E.screenrows - 1;
-      if (E.cy > E.numrows)
-        E.cy = E.numrows;
-    }
-    int times = E.screenrows;
-    while (times--)
-      moveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
-  } break;
+  case PAGE_DOWN:
+    handlePageNavigation(c);
+    break;
   case ARROW_UP:
   case ARROW_DOWN:
   case ARROW_LEFT:
@@ -177,5 +211,5 @@ void inputProcessKeypress() {
     editorInsertChar(c);
     break;
   }
-  quit_times = QUIT_TIMES;
+  quit_times = QUIT_TIMES_DEFAULT;
 }

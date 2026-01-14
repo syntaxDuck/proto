@@ -1,4 +1,5 @@
 #include "output.h"
+#include "ansi.h"
 #include "append.h"
 #include "state.h"
 #include "syntax_highlighting.h"
@@ -10,7 +11,7 @@
 #include <unistd.h>
 
 // Private Functions //
-void drawWelcomeBanner(struct abuf *ab) {
+static void drawWelcomeBanner(struct abuf *ab) {
   char welcome[STATUS_BUFFER_SIZE];
   int welcomelen = snprintf(welcome, sizeof(welcome),
                             "Kilo editor -- version %s", TXTM_VERISON);
@@ -26,9 +27,9 @@ void drawWelcomeBanner(struct abuf *ab) {
   abAppend(ab, welcome, welcomelen);
 }
 
-void drawPadding(struct abuf *ab) { abAppend(ab, "~", 1); }
+static void drawPadding(struct abuf *ab) { abAppend(ab, "~", 1); }
 
-void drawCntrlChar(struct abuf *ab, char c) {
+static void drawCntrlChar(struct abuf *ab, char c) {
   char sym = c <= 26 ? '@' + c : '?';
   abAppend(ab, ANSI_SWAP_FG_BG, sizeof(ANSI_SWAP_FG_BG));
   abAppend(ab, "^", 1);
@@ -36,13 +37,13 @@ void drawCntrlChar(struct abuf *ab, char c) {
   abAppend(ab, ANSI_RESET_ALL, sizeof(ANSI_RESET_ALL));
 }
 
-void setColor(struct abuf *ab, int color) {
+static void setColor(struct abuf *ab, int color) {
   char buf[COLOR_BUFFER_SIZE];
   int clen = snprintf(buf, sizeof(buf), ANSI_SET_COLOR, color);
   abAppend(ab, buf, clen);
 }
 
-void drawChar(struct abuf *ab, char c, int char_color) {
+static void drawChar(struct abuf *ab, char c, int char_color) {
   static int current_color = -1;
   if (iscntrl(c)) {
     drawCntrlChar(ab, c);
@@ -65,7 +66,7 @@ void drawChar(struct abuf *ab, char c, int char_color) {
   }
 }
 
-void drawRows(struct abuf *ab) {
+static void drawRows(struct abuf *ab) {
   int row_index;
   for (row_index = 0; row_index < E.screenrows; row_index++) {
     int filerow = row_index + E.rowoff;
@@ -95,7 +96,7 @@ void drawRows(struct abuf *ab) {
   }
 }
 
-void drawStatusBar(struct abuf *ab) {
+static void drawStatusBar(struct abuf *ab) {
   abAppend(ab, ANSI_SWAP_FG_BG, sizeof(ANSI_SWAP_FG_BG));
   char status[STATUS_BUFFER_SIZE], rstatus[STATUS_BUFFER_SIZE];
   int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
@@ -120,7 +121,7 @@ void drawStatusBar(struct abuf *ab) {
   abAppend(ab, ANSI_CRLF, sizeof(ANSI_CRLF));
 }
 
-void drawMessageBar(struct abuf *ab) {
+static void drawMessageBar(struct abuf *ab) {
   abAppend(ab, ANSI_CLEAR_LINE, sizeof(ANSI_CLEAR_LINE));
   int msglen = strlen(E.statusmsg);
   if (msglen > E.screencols)
@@ -129,7 +130,7 @@ void drawMessageBar(struct abuf *ab) {
     abAppend(ab, E.statusmsg, msglen);
 }
 
-void setCursorPos(struct abuf *ab) {
+static void setCursorPos(struct abuf *ab) {
   char buf[CURSOR_POS_BUFFER];
   snprintf(buf, sizeof(buf), ANSI_CURSOR_POS, (E.cy - E.rowoff) + 1,
            (E.rx - E.coloff) + 1);

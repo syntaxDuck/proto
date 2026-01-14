@@ -23,13 +23,13 @@ void initEditor() {
   E.statusmsg_time = 0;
   E.syntax = NULL;
 
-  if (getWindowSize(&E.screenrows, &E.screencols) == -1)
-    die("getWindowSize");
+  if (termGetWindowSize(&E.screenrows, &E.screencols) == -1)
+    termDie("getWindowSize");
   E.screenrows -= 2;
 }
 
 int main(int argc, char *argv[]) {
-  enableRawMode();
+  termEnableRawMode();
   initEditor();
   if (argc >= 2) {
     editorOpen(argv[1]);

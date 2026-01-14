@@ -39,7 +39,7 @@ void editorOpen(char *filename) {
 
   FILE *fp = fopen(filename, "r");
   if (!fp)
-    die("fopen");
+    termDie("fopen");
 
   char *line = NULL;
   size_t linecap = 0;

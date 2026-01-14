@@ -1,6 +1,11 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#define CTRL_KEY(k) ((k) & 0x1f)
+#define QUIT_WARNING                                                           \
+  "WARNING!!! File has unsaved changes. Press Ctrl-Q %d more times to quit."
+#define MAX_PROMPT_SIZE 4096
+#define QUIT_TIMES_DEFAULT 4
 #define PROMPT_BUFFER_SIZE 128
 #define ASCII_CHAR_LIMIT 128
 

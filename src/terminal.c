@@ -1,5 +1,7 @@
 #include "terminal.h"
+#include "ansi.h"
 #include "input.h"
+#include "output.h"
 #include "state.h"
 
 #include <errno.h>
@@ -9,23 +11,23 @@
 #include <termios.h>
 #include <unistd.h>
 
-void die(const char *s) {
-  write(STDOUT_FILENO, "\x1b[2J", 4);
-  write(STDOUT_FILENO, "\x1b[H", 3);
+void termDie(const char *s) {
+  ansiWriteEscCode(ANSI_ERASE_SCREEN);
+  ansiWriteEscCode(ANSI_CURSOR_HOME);
 
   perror(s);
   exit(1);
 }
 
-void disableRawMode() {
+void termDisableRawMode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1)
-    die("tcsetattr");
+    termDie("tcsetattr");
 }
 
-void enableRawMode() {
+void termEnableRawMode() {
   if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1)
-    die("tcgetattr");
-  atexit(disableRawMode);
+    termDie("tcgetattr");
+  atexit(termDisableRawMode);
 
   struct termios raw = E.orig_termios;
 
@@ -38,18 +40,18 @@ void enableRawMode() {
   raw.c_cc[VTIME] = 1;
 
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-    die("tcsetattr");
+    termDie("tcsetattr");
 }
 
-int editorReadKey() {
+int termReadKey() {
   int nread;
   char c;
   while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
     if (nread == -1 && errno != EAGAIN)
-      die("read");
+      termDie("read");
   }
   if (c == '\x1b') {
-    char seq[3];
+    char seq[ESC_SEQ_BUFFER_SIZE];
     if (read(STDIN_FILENO, &seq[0], 1) != 1)
       return '\x1b';
     if (read(STDIN_FILENO, &seq[1], 1) != 1)
@@ -108,11 +110,11 @@ int editorReadKey() {
   }
 }
 
-int getCursorPositon(int *rows, int *cols) {
-  char buf[32];
+int termGetCursorPosition(int *rows, int *cols) {
+  char buf[CURSOR_POS_BUFFER];
   unsigned int i = 0;
 
-  if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+  if (ansiWriteEscCode(ANSI_REQUEST_CURSOR_POS) != 4)
     return -1;
 
   while (i < sizeof(buf) - 1) {
@@ -131,13 +133,13 @@ int getCursorPositon(int *rows, int *cols) {
   return 0;
 }
 
-int getWindowSize(int *rows, int *cols) {
+int termGetWindowSize(int *rows, int *cols) {
   struct winsize ws;
 
   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-    if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
+    if (write(STDOUT_FILENO, CURSOR_POS_MAX, 12) != 12)
       return -1;
-    return getCursorPositon(rows, cols);
+    return termGetCursorPosition(rows, cols);
   } else {
     *cols = ws.ws_col;
     *rows = ws.ws_row;
