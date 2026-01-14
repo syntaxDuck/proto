@@ -64,8 +64,8 @@ void editorFind() {
   int saved_cy = E.cy;
   int saved_coloff = E.coloff;
   int saved_rowoff = E.rowoff;
-  char *query =
-      editorPrompt("Search: %s (Use ESC/Arrows/Enter)", editorFindCallback);
+  char *query = inputHandlePrompt("Search: %s (Use ESC/Arrows/Enter)",
+                                  editorFindCallback);
   if (query == NULL)
     return;
 

@@ -57,9 +57,9 @@ void editorOpen(char *filename) {
 
 void editorSave() {
   if (E.filename == NULL) {
-    E.filename = editorPrompt("Save as: %s (ESC to cancel)", NULL);
+    E.filename = inputHandlePrompt("Save as: %s (ESC to cancel)", NULL);
     if (E.filename == NULL) {
-      editorSetStatusMessage("Save aborted");
+      outputSetStatusMessage("Save aborted");
       return;
     }
     editorSelectSyntaxHighlight();
@@ -75,12 +75,12 @@ void editorSave() {
         close(fd);
         free(buf);
         E.dirty = 0;
-        editorSetStatusMessage("%d bytes written to disk", len);
+        outputSetStatusMessage("%d bytes written to disk", len);
         return;
       }
     }
     close(fd);
   }
-  editorSetStatusMessage("Can't save! I/O error: %s", strerror(errno));
+  outputSetStatusMessage("Can't save! I/O error: %s", strerror(errno));
   free(buf);
 }

@@ -1,6 +1,9 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#define PROMPT_BUFFER_SIZE 128
+#define ASCII_CHAR_LIMIT 128
+
 enum editorKey {
   BACKSPACE = 127,
   ARROW_LEFT = 1000,
@@ -14,8 +17,7 @@ enum editorKey {
   PAGE_DOWN
 };
 
-char *editorPrompt(char *prompt, void (*callback)(char *, int));
-void editorMoveCursor(int key);
-void editorProcessKeypress();
+char *inputHandlePrompt(char *prompt, void (*callback)(char *, int));
+void inputProcessKeypress();
 
 #endif

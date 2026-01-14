@@ -1,11 +1,15 @@
 
 #ifndef OUTPUT_H
 #define OUTPUT_H
-#include "append.h"
 
 #define STATUS_BUFFER_SIZE 80
 #define COLOR_BUFFER_SIZE 16
 #define CURSOR_POS_BUFFER 31
+
+// Control Characters
+#define ANSI_CRLF "\r\n"
+#define ANSI_ESC '\x1b'
+#define ANSI_CR '\r'
 
 // Cursor Control
 #define ANSI_HIDE_CURSOR "\x1b[?25l"
@@ -19,14 +23,10 @@
 #define ANSI_COLOR_RESET "\x1b[39m"
 // Screen Operations
 #define ANSI_CLEAR_LINE "\x1b[K"
-// Control Characters
-#define ANSI_CRLF "\r\n"
+#define ANSI_ERASE_SCREEN "\x1b[2J"
 
-void editorScroll();
-void editorDrawRows(struct abuf *ab);
-void editorDrawStatusBar(struct abuf *ab);
-void editorDrawMessageBar(struct abuf *ab);
-void editorRefreshScreen();
-void editorSetStatusMessage(const char *fmt, ...);
+void outputScroll();
+void outputRefreshScreen();
+void outputSetStatusMessage(const char *fmt, ...);
 
 #endif
