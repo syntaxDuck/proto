@@ -1,15 +1,16 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include "filetypes.h"
-#include "row.h"
 #include <termios.h>
 #include <time.h>
+#include "filetypes.h"
+#include "row.h"
 
 #define TXTM_VERSION "0.0.1"
 #define TAB_STOP 8
 
-struct editorConfig {
+struct editorConfig
+{
   int cx, cy;
   int rx;
   int rowoff;
@@ -17,12 +18,12 @@ struct editorConfig {
   int screenrows;
   int screencols;
   int numrows;
-  erow *row;
+  erow* row;
   int dirty;
-  char *filename;
+  char* filename;
   char statusmsg[80];
   time_t statusmsg_time;
-  struct editorSyntax *syntax;
+  struct syntax* syntax;
   struct termios orig_termios;
 };
 

@@ -1,141 +1,101 @@
 # proto
 
-A minimalist terminal-based text editor written in C.
+A **minimal terminal-based text editor written in C**, focused on clarity, low-level control, and learning-oriented systems design.
 
-## Description
+`proto` implements core editor functionality from scratch using standard C and POSIX APIs, including raw terminal input handling, file I/O, syntax highlighting, and incremental rendering.
 
-proto is a lightweight, fully-functional text editor that runs directly in your terminal. Inspired by classic editors like vi and nano, it provides essential text editing features with a clean, modular architecture. The editor supports syntax highlighting for C/C++ files and requires no external dependencies beyond standard C libraries.
+---
 
-## Features
+## ✨ Features
 
-- **Text Editing**: Full cursor movement and text editing capabilities
-- **File Operations**: Open, edit, and save files
-- **Syntax Highlighting**: Built-in support for C/C++ files with syntax highlighting
-- **Search**: Find text within files using Ctrl+F
-- **Status Bar**: Shows current file information, cursor position, and helpful hints
-- **Dirty Flag Tracking**: Shows when file has unsaved changes
-- **Minimal Dependencies**: Uses only standard C libraries
+* 📄 Open, edit, and save text files
+* 🎨 Syntax highlighting (C / C++)
+* 🔍 Incremental search
+* ⌨️ Raw terminal input handling (no ncurses)
+* 🧠 Manual memory management
+* 🧩 Modular architecture (editor core, terminal, file I/O, syntax)
 
-## Installation
+---
 
-### Prerequisites
+## 🧱 Architecture Overview
 
-- C compiler (GCC or Clang)
-- CMake (version 3.10 or higher)
-- Unix-like system (Linux, macOS, or WSL)
+The codebase is intentionally modular to separate concerns and improve maintainability:
 
-### Build Instructions
+* `editor.c` – Core editor state, rendering, and control flow
+* `terminal.c` – Raw mode handling, screen drawing, cursor control
+* `fileio.c` – File loading and saving
+* `syntax.c` – Language-aware syntax highlighting
+* `input.c` – Key handling and editor commands
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd proto
-   ```
+This structure mirrors real-world systems software and makes it easier to reason about complexity in C.
 
-2. Create build directory and configure:
-   ```bash
-   mkdir -p build
-   cd build
-   cmake ..
-   ```
+---
 
-3. Build the project:
-   ```bash
-   make
-   ```
-   Alternatively:
-   ```bash
-   cmake --build .
-   ```
+## 🚀 Getting Started
 
-4. Run the editor:
-   ```bash
-   ./proto [filename]
-   ```
-
-   - Run without arguments to start with a new file
-   - Pass a filename to open an existing file or create a new one
-
-### Clean Build
+### Build
 
 ```bash
-cd build
-make clean
+make
 ```
 
-## Usage
+### Run
 
-### Key Bindings
-
-- `Ctrl-S`: Save file
-- `Ctrl-Q`: Quit editor (with confirmation if unsaved changes)
-- `Ctrl-F`: Find/search text
-- `Arrow Keys`: Navigate cursor
-- `Home/End`: Move to beginning/end of line
-- `Page Up/Down`: Navigate through document
-- `Backspace/Delete`: Delete characters
-- Standard typing keys for text input
-
-### File Support
-
-Currently supports syntax highlighting for:
-- C files (`.c`, `.h`)
-- C++ files (`.cpp`)
-
-The syntax highlighting system is extensible for additional languages.
-
-## Project Structure
-
-```
-proto/
-├── src/                    # Source code
-│   ├── main.c             # Entry point and main editor loop
-│   ├── terminal.c         # Terminal handling and raw mode
-│   ├── fileio.c           # File operations (open/save)
-│   ├── input.c            # Keyboard input processing
-│   ├── output.c           # Screen rendering
-│   ├── row.c              # Text row management
-│   ├── syntax_highlighting.c # Syntax highlighting
-│   ├── find.c             # Search functionality
-│   ├── filetypes.c        # File type definitions
-│   ├── append.c           # Text append operations
-│   └── ops.c              # Editor operations
-├── include/                # Header files
-├── CMakeLists.txt          # CMake configuration
-└── README.md              # This file
+```bash
+./proto <optional_filename>
 ```
 
-## Architecture
+---
 
-The editor follows a modular design with clear separation of concerns:
+## 🛠️ Controls
 
-- **Terminal Module**: Handles raw terminal mode and escape sequences
-- **File I/O Module**: Manages file operations and content loading
-- **Input Module**: Processes keyboard input and special keys
-- **Output Module**: Handles screen rendering and cursor positioning
-- **Row Module**: Manages text rows and memory allocation
-- **Syntax Highlighting**: Provides extensible syntax coloring
+| Key        | Action      |
+| ---------- | ----------- |
+| Ctrl-S     | Save file   |
+| Ctrl-Q     | Quit        |
+| Ctrl-F     | Search      |
+| Arrow Keys | Move cursor |
 
-## Technical Details
+---
 
-- **Memory Management**: Manual memory allocation for optimal performance
-- **Terminal Control**: Uses ANSI escape sequences for screen manipulation
-- **Raw Mode**: Disables terminal buffering for immediate key input
-- **Configuration**: Constants defined in `state.h` for customization
+## 🎯 Goals of This Project
 
-## Contributing
+This project was built to:
 
-This project serves as an excellent learning resource for systems programming and text editor internals. Contributions are welcome, especially for:
+* Practice **systems programming in C**
+* Gain hands-on experience with **terminal I/O and raw mode**
+* Explore **editor internals** (buffer management, rendering loops)
+* Emphasize **clarity and correctness over features**
 
-- Additional syntax highlighting languages
-- New features and key bindings
-- Performance optimizations
-- Code improvements and bug fixes
+It is inspired by classic minimal editors and educational implementations.
 
-## License
+---
 
-This project is open source. Please check the LICENSE file for details.
+## 📸 Demo
 
-## Version
+> *Add screenshots or a short GIF here showing editing, search, and syntax highlighting.*
 
-Current version: 0.0.1
+---
+
+## 🔮 Future Improvements
+
+* Additional language syntax support
+* Undo/redo
+* Configurable keybindings
+* Basic plugin system
+* Automated tests
+* CI build via GitHub Actions
+
+---
+
+## 📚 Inspiration
+
+* Kilo text editor by Salvatore Sanfilippo
+* Traditional UNIX terminal editors
+
+---
+
+## 📄 License
+
+MIT License
+

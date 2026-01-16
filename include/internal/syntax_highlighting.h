@@ -6,7 +6,8 @@
 #define HL_HIGHLIGHT_NUMBERS (1 << 0)
 #define HL_HIGHLIGHT_STRINGS (1 << 1)
 
-enum editorHighlight {
+enum editorHighlight
+{
   HL_NORMAL = 0,
   HL_COMMENT,
   HL_MLCOMMENT,
@@ -17,9 +18,8 @@ enum editorHighlight {
   HL_MATCH
 };
 
-int is_separator(int c);
-void editorUpdateSyntax(erow *row);
-int editorSyntaxToColor(int hl);
-void editorSelectSyntaxHighlight();
+void syntaxUpdate(erow* row);
+int syntaxToColor(int hl);
+void syntaxSelectHighlight();
 
 #endif

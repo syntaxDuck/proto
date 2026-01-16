@@ -11,14 +11,17 @@
 #include <unistd.h>
 
 // Private Functions //
-static void drawWelcomeBanner(struct abuf *ab) {
+static void
+drawWelcomeBanner(struct abuf* ab)
+{
   char welcome[STATUS_BUFFER_SIZE];
-  int welcomelen = snprintf(welcome, sizeof(welcome),
-                            "Kilo editor -- version %s", TXTM_VERSION);
+  int welcomelen = snprintf(
+      welcome, sizeof(welcome), "Kilo editor -- version %s", TXTM_VERSION);
   if (welcomelen > E.screencols)
     welcomelen = E.screencols;
   int padding = (E.screencols - welcomelen) / 2;
-  if (padding) {
+  if (padding)
+  {
     abAppend(ab, "~", 1);
     padding--;
   }
@@ -27,9 +30,15 @@ static void drawWelcomeBanner(struct abuf *ab) {
   abAppend(ab, welcome, welcomelen);
 }
 
-static void drawPadding(struct abuf *ab) { abAppend(ab, "~", 1); }
+static void
+drawPadding(struct abuf* ab)
+{
+  abAppend(ab, "~", 1);
+}
 
-static void drawCntrlChar(struct abuf *ab, char c) {
+static void
+drawCntrlChar(struct abuf* ab, char c)
+{
   char sym = c <= 26 ? '@' + c : '?';
   abAppend(ab, ANSI_SWAP_FG_BG, sizeof(ANSI_SWAP_FG_BG));
   abAppend(ab, "^", 1);
@@ -37,28 +46,40 @@ static void drawCntrlChar(struct abuf *ab, char c) {
   abAppend(ab, ANSI_RESET_ALL, sizeof(ANSI_RESET_ALL));
 }
 
-static void setColor(struct abuf *ab, int color) {
+static void
+setColor(struct abuf* ab, int color)
+{
   char buf[COLOR_BUFFER_SIZE];
   int clen = snprintf(buf, sizeof(buf), ANSI_SET_COLOR, color);
   abAppend(ab, buf, clen);
 }
 
-static void drawChar(struct abuf *ab, char c, int char_color) {
+static void
+drawChar(struct abuf* ab, char c, int char_color)
+{
   static int current_color = -1;
-  if (iscntrl(c)) {
+  if (iscntrl(c))
+  {
     drawCntrlChar(ab, c);
-    if (current_color != -1) {
+    if (current_color != -1)
+    {
       setColor(ab, current_color);
     }
-  } else if (char_color == HL_NORMAL) {
-    if (current_color != -1) {
+  }
+  else if (char_color == HL_NORMAL)
+  {
+    if (current_color != -1)
+    {
       abAppend(ab, ANSI_COLOR_RESET, sizeof(ANSI_COLOR_RESET));
       current_color = -1;
     }
     abAppend(ab, &c, 1);
-  } else {
-    int color = editorSyntaxToColor(char_color);
-    if (color != current_color) {
+  }
+  else
+  {
+    int color = syntaxToColor(char_color);
+    if (color != current_color)
+    {
       current_color = color;
       setColor(ab, color);
     }
@@ -66,27 +87,37 @@ static void drawChar(struct abuf *ab, char c, int char_color) {
   }
 }
 
-static void drawRows(struct abuf *ab) {
+static void
+drawRows(struct abuf* ab)
+{
   int row_index;
-  for (row_index = 0; row_index < E.screenrows; row_index++) {
+  for (row_index = 0; row_index < E.screenrows; row_index++)
+  {
     int filerow = row_index + E.rowoff;
-    if (filerow >= E.numrows) {
-      if (E.numrows == 0 && row_index == E.screenrows / 3) {
+    if (filerow >= E.numrows)
+    {
+      if (E.numrows == 0 && row_index == E.screenrows / 3)
+      {
         drawWelcomeBanner(ab);
-      } else {
+      }
+      else
+      {
         drawPadding(ab);
       }
-    } else {
+    }
+    else
+    {
       int len = E.row[filerow].rsize - E.coloff;
       if (len < 0)
         len = 0;
       if (len > E.screencols)
         len = E.screencols;
-      char *render_char = &E.row[filerow].render[E.coloff];
-      unsigned char *hl = &E.row[filerow].hl[E.coloff];
+      char* render_char = &E.row[filerow].render[E.coloff];
+      unsigned char* hl = &E.row[filerow].hl[E.coloff];
       int current_color = -1;
       int col_index;
-      for (col_index = 0; col_index < len; col_index++) {
+      for (col_index = 0; col_index < len; col_index++)
+      {
         drawChar(ab, render_char[col_index], hl[col_index]);
       }
       abAppend(ab, ANSI_COLOR_RESET, sizeof(ANSI_COLOR_RESET));
@@ -96,23 +127,35 @@ static void drawRows(struct abuf *ab) {
   }
 }
 
-static void drawStatusBar(struct abuf *ab) {
+static void
+drawStatusBar(struct abuf* ab)
+{
   abAppend(ab, ANSI_SWAP_FG_BG, sizeof(ANSI_SWAP_FG_BG));
   char status[STATUS_BUFFER_SIZE], rstatus[STATUS_BUFFER_SIZE];
-  int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
-                     E.filename ? E.filename : "[No Name]", E.numrows,
+  int len = snprintf(status,
+                     sizeof(status),
+                     "%.20s - %d lines %s",
+                     E.filename ? E.filename : "[No Name]",
+                     E.numrows,
                      E.dirty ? "(modified)" : "");
-  int rlen =
-      snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
-               E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.numrows);
+  int rlen = snprintf(rstatus,
+                      sizeof(rstatus),
+                      "%s | %d/%d",
+                      E.syntax ? E.syntax->filetype : "no ft",
+                      E.cy + 1,
+                      E.numrows);
   if (len > E.screencols)
     len = E.screencols;
   abAppend(ab, status, len);
-  while (len < E.screencols) {
-    if (E.screencols - len == rlen) {
+  while (len < E.screencols)
+  {
+    if (E.screencols - len == rlen)
+    {
       abAppend(ab, rstatus, rlen);
       break;
-    } else {
+    }
+    else
+    {
       abAppend(ab, " ", 1);
       len++;
     }
@@ -121,7 +164,9 @@ static void drawStatusBar(struct abuf *ab) {
   abAppend(ab, ANSI_CRLF, sizeof(ANSI_CRLF));
 }
 
-static void drawMessageBar(struct abuf *ab) {
+static void
+drawMessageBar(struct abuf* ab)
+{
   abAppend(ab, ANSI_CLEAR_LINE, sizeof(ANSI_CLEAR_LINE));
   int msglen = strlen(E.statusmsg);
   if (msglen > E.screencols)
@@ -130,35 +175,49 @@ static void drawMessageBar(struct abuf *ab) {
     abAppend(ab, E.statusmsg, msglen);
 }
 
-static void setCursorPos(struct abuf *ab) {
+static void
+setCursorPos(struct abuf* ab)
+{
   char buf[CURSOR_POS_BUFFER];
-  snprintf(buf, sizeof(buf), ANSI_CURSOR_POS, (E.cy - E.rowoff) + 1,
+  snprintf(buf,
+           sizeof(buf),
+           ANSI_CURSOR_POS,
+           (E.cy - E.rowoff) + 1,
            (E.rx - E.coloff) + 1);
   abAppend(ab, buf, strlen(buf));
 }
 
 // Public Functions //
-void outputScroll() {
+void
+outputScroll()
+{
   E.rx = 0;
-  if (E.cy < E.numrows) {
-    E.rx = editorRowCxToRx((&E.row[E.cy]), E.cx);
+  if (E.cy < E.numrows)
+  {
+    E.rx = rowCxToRx((&E.row[E.cy]), E.cx);
   }
 
-  if (E.cy < E.rowoff) {
+  if (E.cy < E.rowoff)
+  {
     E.rowoff = E.cy;
   }
-  if (E.cy >= E.rowoff + E.screenrows) {
+  if (E.cy >= E.rowoff + E.screenrows)
+  {
     E.rowoff = E.cy - E.screenrows + 1;
   }
-  if (E.rx < E.coloff) {
+  if (E.rx < E.coloff)
+  {
     E.coloff = E.rx;
   }
-  if (E.rx >= E.coloff + E.screencols) {
+  if (E.rx >= E.coloff + E.screencols)
+  {
     E.coloff = E.rx - E.screencols + 1;
   }
 }
 
-void outputRefreshScreen() {
+void
+outputRefreshScreen()
+{
   outputScroll();
 
   struct abuf ab = ABUF_INIT;
@@ -177,7 +236,9 @@ void outputRefreshScreen() {
   abFree(&ab);
 }
 
-void outputSetStatusMessage(const char *fmt, ...) {
+void
+outputSetStatusMessage(const char* fmt, ...)
+{
   va_list ap;
   va_start(ap, fmt);
   vsnprintf(E.statusmsg, sizeof(E.statusmsg), fmt, ap);

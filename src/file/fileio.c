@@ -1,8 +1,8 @@
 #include "proto/fileio.h"
-#include "proto/input.h"
-#include "proto/output.h"
 #include "internal/state.h"
 #include "internal/syntax_highlighting.h"
+#include "proto/input.h"
+#include "proto/output.h"
 #include "proto/terminal.h"
 
 #include <errno.h>
@@ -12,16 +12,19 @@
 #include <string.h>
 #include <unistd.h>
 
-char *editorRowsToString(int *buflen) {
+static char*
+fioRowsToString(int* buflen)
+{
   int totlen = 0;
   int j;
   for (j = 0; j < E.numrows; j++)
     totlen += E.row[j].size + 1;
   *buflen = totlen;
 
-  char *buf = malloc(totlen);
-  char *p = buf;
-  for (j = 0; j < E.numrows; j++) {
+  char* buf = malloc(totlen);
+  char* p = buf;
+  for (j = 0; j < E.numrows; j++)
+  {
     memcpy(p, E.row[j].chars, E.row[j].size);
     p += E.row[j].size;
     *p = '\n';
@@ -31,47 +34,57 @@ char *editorRowsToString(int *buflen) {
   return buf;
 }
 
-void editorOpen(char *filename) {
+void
+fioOpen(char* filename)
+{
   free(E.filename);
   E.filename = strdup(filename);
 
-  editorSelectSyntaxHighlight();
+  syntaxSelectHighlight();
 
-  FILE *fp = fopen(filename, "r");
+  FILE* fp = fopen(filename, "r");
   if (!fp)
     termDie("fopen");
 
-  char *line = NULL;
+  char* line = NULL;
   size_t linecap = 0;
   ssize_t linelen;
-  while ((linelen = getline(&line, &linecap, fp)) != -1) {
+  while ((linelen = getline(&line, &linecap, fp)) != -1)
+  {
     while (linelen > 0 &&
            (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
       linelen--;
-    editorInsertRow(E.numrows, line, linelen);
+    rowInsertRow(E.numrows, line, linelen);
   }
   free(line);
   fclose(fp);
   E.dirty = 0;
 }
 
-void editorSave() {
-  if (E.filename == NULL) {
+void
+fioSave()
+{
+  if (E.filename == NULL)
+  {
     E.filename = inputHandlePrompt("Save as: %s (ESC to cancel)", NULL);
-    if (E.filename == NULL) {
+    if (E.filename == NULL)
+    {
       outputSetStatusMessage("Save aborted");
       return;
     }
-    editorSelectSyntaxHighlight();
+    syntaxSelectHighlight();
   }
 
   int len;
-  char *buf = editorRowsToString(&len);
+  char* buf = fioRowsToString(&len);
 
   int fd = open(E.filename, O_RDWR | O_CREAT, 0644);
-  if (fd != -1) {
-    if (ftruncate(fd, len) != -1) {
-      if (write(fd, buf, len) == len) {
+  if (fd != -1)
+  {
+    if (ftruncate(fd, len) != -1)
+    {
+      if (write(fd, buf, len) == len)
+      {
         close(fd);
         free(buf);
         E.dirty = 0;
