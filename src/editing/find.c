@@ -1,5 +1,5 @@
 #include "internal/find.h"
-#include "internal/state.h"
+#include "internal/buffer.h"
 #include "internal/syntax_highlighting.h"
 #include "proto/input.h"
 
@@ -10,6 +10,7 @@
 static void
 callback(char* query, int key)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   static int last_match = -1;
   static int direction = 1;
 
@@ -18,7 +19,9 @@ callback(char* query, int key)
 
   if (saved_hl)
   {
-    memcpy(E.row[saved_hl_line].hl, saved_hl, E.row[saved_hl_line].rsize);
+    memcpy(curr_buff->row[saved_hl_line].hl,
+           saved_hl,
+           curr_buff->row[saved_hl_line].rsize);
     free(saved_hl);
     saved_hl = NULL;
   }
@@ -47,21 +50,21 @@ callback(char* query, int key)
     direction = 1;
   int current = last_match;
   int i;
-  for (i = 0; i < E.numrows; i++)
+  for (i = 0; i < curr_buff->numrows; i++)
   {
     current += direction;
     if (current == -1)
-      current = E.numrows - 1;
-    else if (current == E.numrows)
+      current = curr_buff->numrows - 1;
+    else if (current == curr_buff->numrows)
       current = 0;
-    erow* row = &E.row[current];
+    erow* row = &curr_buff->row[current];
     char* match = strstr(row->render, query);
     if (match)
     {
       last_match = current;
-      E.cy = current;
-      E.cx = rowRxToCx(row, match - row->render);
-      E.rowoff = E.numrows;
+      curr_buff->cy = current;
+      curr_buff->cx = rowRxToCx(row, match - row->render);
+      curr_buff->rowoff = curr_buff->numrows;
 
       saved_hl_line = current;
       saved_hl = malloc(row->rsize);
@@ -75,10 +78,11 @@ callback(char* query, int key)
 void
 find()
 {
-  int saved_cx = E.cx;
-  int saved_cy = E.cy;
-  int saved_coloff = E.coloff;
-  int saved_rowoff = E.rowoff;
+  buffer* curr_buff = buffGetCurrentBuffer();
+  int saved_cx = curr_buff->cx;
+  int saved_cy = curr_buff->cy;
+  int saved_coloff = curr_buff->coloff;
+  int saved_rowoff = curr_buff->rowoff;
   char* query =
       inputHandlePrompt("Search: %s (Use ESC/Arrows/Enter)", callback);
   if (query == NULL)
@@ -90,9 +94,9 @@ find()
   }
   else
   {
-    E.cx = saved_cx;
-    E.cy = saved_cy;
-    E.coloff = saved_coloff;
-    E.rowoff = saved_rowoff;
+    curr_buff->cx = saved_cx;
+    curr_buff->cy = saved_cy;
+    curr_buff->coloff = saved_coloff;
+    curr_buff->rowoff = saved_rowoff;
   }
 }

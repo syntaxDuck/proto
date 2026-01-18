@@ -5,6 +5,7 @@
 add_library(core STATIC
     src/core/main.c
     src/core/row.c
+    src/core/buffer.c
 )
 
 # Terminal module  

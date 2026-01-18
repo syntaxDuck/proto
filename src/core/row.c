@@ -1,4 +1,5 @@
 #include "internal/row.h"
+#include "internal/buffer.h"
 #include "internal/state.h"
 #include "internal/syntax_highlighting.h"
 
@@ -60,19 +61,23 @@ freeRow(erow* row)
 static void
 delRow(int at)
 {
-  if (at < 0 || at >= E.numrows)
+  buffer* curr_buff = buffGetCurrentBuffer();
+  if (at < 0 || at >= curr_buff->numrows)
     return;
-  freeRow(&E.row[at]);
-  memmove(&E.row[at], &E.row[at + 1], sizeof(erow) * (E.numrows - at - 1));
-  for (int j = at; j < E.numrows - 1; j++)
-    E.row[j].idx--;
-  E.numrows--;
-  E.dirty++;
+  freeRow(&curr_buff->row[at]);
+  memmove(&curr_buff->row[at],
+          &curr_buff->row[at + 1],
+          sizeof(erow) * (curr_buff->numrows - at - 1));
+  for (int j = at; j < curr_buff->numrows - 1; j++)
+    curr_buff->row[j].idx--;
+  curr_buff->numrows--;
+  curr_buff->dirty++;
 }
 
 static void
 insertChar(erow* row, int at, int c)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   if (at < 0 || at > row->size)
     at = row->size;
   row->chars = realloc(row->chars, row->size + 2);
@@ -80,29 +85,31 @@ insertChar(erow* row, int at, int c)
   row->size++;
   row->chars[at] = c;
   updateRow(row);
-  E.dirty++;
+  curr_buff->dirty++;
 }
 
 static void
 appendString(erow* row, char* s, size_t len)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   row->chars = realloc(row->chars, row->size + len + 1);
   memcpy(&row->chars[row->size], s, len);
   row->size += len;
   row->chars[row->size] = '\0';
   updateRow(row);
-  E.dirty++;
+  curr_buff->dirty++;
 }
 
 static void
 delChar(erow* row, int at)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   if (at < 0 || at >= row->size)
     return;
   memmove(&row->chars[at], &row->chars[at + 1], row->size - at);
   row->size--;
   updateRow(row);
-  E.dirty++;
+  curr_buff->dirty++;
 }
 
 int
@@ -139,86 +146,95 @@ rowRxToCx(erow* row, int rx)
 void
 rowInsertRow(int at, char* s, size_t len)
 {
-  if (at < 0 || at > E.numrows)
+  buffer* curr_buff = buffGetCurrentBuffer();
+  if (at < 0 || at > curr_buff->numrows)
     return;
 
-  erow* new_row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
+  erow* new_row =
+      realloc(curr_buff->row, sizeof(erow) * (curr_buff->numrows + 1));
   if (new_row == NULL)
     return;
-  E.row = new_row;
-  memmove(&E.row[at + 1], &E.row[at], sizeof(erow) * (E.numrows - at));
-  for (int j = at + 1; j <= E.numrows; j++)
-    E.row[j].idx++;
+  curr_buff->row = new_row;
+  memmove(&curr_buff->row[at + 1],
+          &curr_buff->row[at],
+          sizeof(erow) * (curr_buff->numrows - at));
+  for (int j = at + 1; j <= curr_buff->numrows; j++)
+    curr_buff->row[j].idx++;
 
-  E.row[at].idx = at;
+  curr_buff->row[at].idx = at;
 
-  E.row[at].size = len;
-  E.row[at].chars = malloc(len + 1);
-  if (E.row[at].chars == NULL)
+  curr_buff->row[at].size = len;
+  curr_buff->row[at].chars = malloc(len + 1);
+  if (curr_buff->row[at].chars == NULL)
     return;
-  memcpy(E.row[at].chars, s, len);
-  E.row[at].chars[len] = '\0';
+  memcpy(curr_buff->row[at].chars, s, len);
+  curr_buff->row[at].chars[len] = '\0';
 
-  E.row[at].rsize = 0;
-  E.row[at].render = NULL;
-  E.row[at].hl = NULL;
-  E.row[at].hl_open_comment = 0;
-  updateRow(&E.row[at]);
+  curr_buff->row[at].rsize = 0;
+  curr_buff->row[at].render = NULL;
+  curr_buff->row[at].hl = NULL;
+  curr_buff->row[at].hl_open_comment = 0;
+  updateRow(&curr_buff->row[at]);
 
-  E.numrows++;
-  E.dirty++;
+  curr_buff->numrows++;
+  curr_buff->dirty++;
 }
 
 void
 rowInsertNewline()
 {
-  if (E.cx == 0)
+  buffer* curr_buff = buffGetCurrentBuffer();
+  if (curr_buff->cx == 0)
   {
-    rowInsertRow(E.cy, "", 0);
+    rowInsertRow(curr_buff->cy, "", 0);
   }
   else
   {
-    erow* row = &E.row[E.cy];
-    rowInsertRow(E.cy + 1, &row->chars[E.cx], row->size - E.cx);
-    row = &E.row[E.cy];
-    row->size = E.cx;
+    erow* row = &curr_buff->row[curr_buff->cy];
+    rowInsertRow(curr_buff->cy + 1,
+                 &row->chars[curr_buff->cx],
+                 row->size - curr_buff->cx);
+    row = &curr_buff->row[curr_buff->cy];
+    row->size = curr_buff->cx;
     row->chars[row->size] = '\0';
     updateRow(row);
   }
-  E.cy++;
-  E.cx = 0;
+  curr_buff->cy++;
+  curr_buff->cx = 0;
 }
 
 void
 rowInsertChar(int c)
 {
-  if (E.cy == E.numrows)
+  buffer* curr_buff = buffGetCurrentBuffer();
+  if (curr_buff->cy == curr_buff->numrows)
   {
-    rowInsertRow(E.numrows, "", 0);
+    rowInsertRow(curr_buff->numrows, "", 0);
   }
-  insertChar(&E.row[E.cy], E.cx, c);
-  E.cx++;
+  insertChar(&curr_buff->row[curr_buff->cy], curr_buff->cx, c);
+  curr_buff->cx++;
 }
 
 void
 rowDelChar()
 {
-  if (E.cy == E.numrows)
+  buffer* curr_buff = buffGetCurrentBuffer();
+  if (curr_buff->cy == curr_buff->numrows)
     return;
-  if (E.cx == 0 && E.cy == 0)
+  if (curr_buff->cx == 0 && curr_buff->cy == 0)
     return;
 
-  erow* row = &E.row[E.cy];
-  if (E.cx > 0)
+  erow* row = &curr_buff->row[curr_buff->cy];
+  if (curr_buff->cx > 0)
   {
-    delChar(row, E.cx - 1);
-    E.cx--;
+    delChar(row, curr_buff->cx - 1);
+    curr_buff->cx--;
   }
   else
   {
-    E.cx = E.row[E.cy - 1].size;
-    appendString(&E.row[E.cy - 1], row->chars, row->size);
-    delRow(E.cy);
-    E.cy--;
+    curr_buff->cx = curr_buff->row[curr_buff->cy - 1].size;
+    appendString(&curr_buff->row[curr_buff->cy - 1], row->chars, row->size);
+    delRow(curr_buff->cy);
+    curr_buff->cy--;
   }
 }

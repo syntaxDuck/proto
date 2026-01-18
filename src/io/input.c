@@ -1,8 +1,8 @@
 #include "proto/input.h"
 #include "internal/ansi.h"
+#include "internal/buffer.h"
 #include "internal/find.h"
 #include "internal/row.h"
-#include "internal/state.h"
 #include "proto/fileio.h"
 #include "proto/output.h"
 #include "proto/terminal.h"
@@ -17,63 +17,69 @@
 static void
 moveCursor(int key)
 {
-  erow* row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+  buffer* curr_buff = buffGetCurrentBuffer();
+  erow* row = (curr_buff->cy >= curr_buff->numrows)
+                  ? NULL
+                  : &curr_buff->row[curr_buff->cy];
 
   switch (key)
   {
     case ARROW_LEFT:
-      if (E.cx != 0)
+      if (curr_buff->cx != 0)
       {
-        E.cx--;
+        curr_buff->cx--;
       }
-      else if (E.cy > 0)
+      else if (curr_buff->cy > 0)
       {
-        E.cy--;
-        E.cx = E.row[E.cy].size;
+        curr_buff->cy--;
+        curr_buff->cx = curr_buff->row[curr_buff->cy].size;
       }
       break;
     case ARROW_RIGHT:
-      if (row && E.cx < row->size)
+      if (row && curr_buff->cx < row->size)
       {
-        E.cx++;
+        curr_buff->cx++;
       }
-      else if (row && E.cx == row->size)
+      else if (row && curr_buff->cx == row->size)
       {
-        E.cy++;
-        E.cx = 0;
+        curr_buff->cy++;
+        curr_buff->cx = 0;
       }
       break;
     case ARROW_DOWN:
-      if (E.cy < E.numrows)
+      if (curr_buff->cy < curr_buff->numrows)
       {
-        E.cy++;
+        curr_buff->cy++;
       }
       break;
     case ARROW_UP:
-      if (E.cy != 0)
+      if (curr_buff->cy != 0)
       {
-        E.cy--;
+        curr_buff->cy--;
       }
       break;
   }
 
   if (key == ARROW_UP || key == ARROW_DOWN ||
-      (key == ARROW_LEFT && E.cx == 0) ||
-      (key == ARROW_RIGHT && row && E.cx == row->size))
+      (key == ARROW_LEFT && curr_buff->cx == 0) ||
+      (key == ARROW_RIGHT && row && curr_buff->cx == row->size))
   {
-    row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+    row = (curr_buff->cy >= curr_buff->numrows)
+              ? NULL
+              : &curr_buff->row[curr_buff->cy];
   }
   int rowlen = row ? row->size : 0;
-  if (E.cx > rowlen)
+  if (curr_buff->cx > rowlen)
   {
-    E.cx = rowlen;
+    curr_buff->cx = rowlen;
   }
 }
 
 static bool
 handleQuitRequest(int* count)
 {
-  if (E.dirty && *count > 0)
+  buffer* curr_buff = buffGetCurrentBuffer();
+  if (curr_buff->dirty && *count > 0)
   {
     outputSetStatusMessage(QUIT_WARNING, *count);
     *count = *count - 1;
@@ -90,13 +96,16 @@ handleQuitRequest(int* count)
 static void
 handlePageNavigation(int direction)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   if (direction == PAGE_UP)
   {
     // Move to top of visible area, but not above document start
-    int target_y = (E.rowoff >= E.screenrows) ? E.rowoff - E.screenrows + 1 : 0;
+    int target_y = (curr_buff->rowoff >= curr_buff->buffrows)
+                       ? curr_buff->rowoff - curr_buff->buffrows + 1
+                       : 0;
 
     // Calculate how many lines to move
-    int lines_to_move = E.cy - target_y;
+    int lines_to_move = curr_buff->cy - target_y;
     for (int i = 0; i < lines_to_move; i++)
     {
       moveCursor(ARROW_UP);
@@ -106,14 +115,14 @@ handlePageNavigation(int direction)
   { // PAGE_DOWN
     // Calculate target position: bottom of visible area, but not beyond
     // document
-    int target_y = E.rowoff + E.screenrows - 1;
-    if (target_y >= E.numrows)
+    int target_y = curr_buff->rowoff + curr_buff->buffrows - 1;
+    if (target_y >= curr_buff->numrows)
     {
-      target_y = E.numrows - 1;
+      target_y = curr_buff->numrows - 1;
     }
 
     // Calculate how many lines to move
-    int lines_to_move = target_y - E.cy;
+    int lines_to_move = target_y - curr_buff->cy;
     for (int i = 0; i < lines_to_move; i++)
     {
       moveCursor(ARROW_DOWN);
@@ -191,6 +200,7 @@ inputHandlePrompt(char* prompt, void (*callback)(char*, int))
 void
 inputProcessKeypress()
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   static int quit_times = QUIT_TIMES_DEFAULT;
   int c = termReadKey();
 
@@ -209,11 +219,11 @@ inputProcessKeypress()
       break;
 
     case HOME_KEY:
-      E.cx = 0;
+      curr_buff->cx = 0;
       break;
     case END_KEY:
-      if (E.cy < E.numrows)
-        E.cx = E.row[E.cy].size;
+      if (curr_buff->cy < curr_buff->numrows)
+        curr_buff->cx = curr_buff->row[curr_buff->cy].size;
       break;
 
     case CTRL_KEY('f'):

@@ -3,33 +3,30 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
+#include "internal/buffer.h"
 #include "internal/state.h"
 #include "proto/fileio.h"
 #include "proto/input.h"
 #include "proto/output.h"
 #include "proto/terminal.h"
 
-struct editorConfig E;
+struct editorState E;
 
 void
 initEditor()
 {
-  E.cx = 0;
-  E.cy = 0;
-  E.rx = 0;
-  E.rowoff = 0;
-  E.coloff = 0;
-  E.numrows = 0;
-  E.row = NULL;
-  E.dirty = 0;
-  E.filename = NULL;
   E.statusmsg[0] = '\0';
   E.statusmsg_time = 0;
-  E.syntax = NULL;
 
-  if (termGetWindowSize(&E.screenrows, &E.screencols) == -1)
+  // Setup inital buffer
+  E.current_buffer = buffInit();
+  E.buffers = malloc(sizeof(buffer*));
+  E.buffers[0] = E.current_buffer;
+
+  buffer* buff = E.current_buffer;
+  if (termGetWindowSize(&buff->buffrows, &buff->buffcols) == -1)
     termDie("getWindowSize");
-  E.screenrows -= 2;
+  buff->buffrows -= 2;
 }
 
 int

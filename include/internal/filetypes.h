@@ -3,7 +3,7 @@
 
 #define HLDB_ENTRIES 1
 
-struct syntax
+typedef struct syntax
 {
   char* filetype;
   char** filematch;
@@ -12,7 +12,7 @@ struct syntax
   char* multiline_comment_start;
   char* multiline_comment_end;
   int flags;
-};
+} syntax;
 
 extern struct syntax HLDB[];
 extern char* C_HL_extensions[];

@@ -2,8 +2,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include "internal/buffer.h"
 #include "internal/filetypes.h"
-#include "internal/state.h"
 
 static int
 is_separator(int c)
@@ -15,17 +15,18 @@ is_separator(int c)
 void
 syntaxUpdate(erow* row)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   row->hl = realloc(row->hl, row->rsize);
   memset(row->hl, HL_NORMAL, row->rsize);
 
-  if (E.syntax == NULL)
+  if (curr_buff->syntax == NULL)
     return;
 
-  char** keywords = E.syntax->keywords;
+  char** keywords = curr_buff->syntax->keywords;
 
-  char* scs = E.syntax->singleline_comment_start;
-  char* mcs = E.syntax->multiline_comment_start;
-  char* mce = E.syntax->multiline_comment_end;
+  char* scs = curr_buff->syntax->singleline_comment_start;
+  char* mcs = curr_buff->syntax->multiline_comment_start;
+  char* mce = curr_buff->syntax->multiline_comment_end;
 
   int scs_len = scs ? strlen(scs) : 0;
   int mcs_len = mcs ? strlen(mcs) : 0;
@@ -33,7 +34,8 @@ syntaxUpdate(erow* row)
 
   int prev_sep = 1;
   int in_string = 0;
-  int in_comment = (row->idx > 0 && E.row[row->idx - 1].hl_open_comment);
+  int in_comment =
+      (row->idx > 0 && curr_buff->row[row->idx - 1].hl_open_comment);
 
   int i = 0;
   while (i < row->rsize)
@@ -78,7 +80,7 @@ syntaxUpdate(erow* row)
       }
     }
 
-    if (E.syntax->flags & HL_HIGHLIGHT_STRINGS)
+    if (curr_buff->syntax->flags & HL_HIGHLIGHT_STRINGS)
     {
       if (in_string)
       {
@@ -107,7 +109,7 @@ syntaxUpdate(erow* row)
       }
     }
 
-    if (E.syntax->flags & HL_HIGHLIGHT_NUMBERS)
+    if (curr_buff->syntax->flags & HL_HIGHLIGHT_NUMBERS)
     {
       if ((isdigit(c) && (prev_sep || prev_hl == HL_NUMBER)) ||
           (c == '.' && prev_hl == HL_NUMBER))
@@ -149,8 +151,8 @@ syntaxUpdate(erow* row)
 
   int changed = (row->hl_open_comment != in_comment);
   row->hl_open_comment = in_comment;
-  if (changed && row->idx + 1 < E.numrows)
-    syntaxUpdate(&E.row[row->idx + 1]);
+  if (changed && row->idx + 1 < curr_buff->numrows)
+    syntaxUpdate(&curr_buff->row[row->idx + 1]);
 }
 
 int
@@ -179,11 +181,12 @@ syntaxToColor(int hl)
 void
 syntaxSelectHighlight()
 {
-  E.syntax = NULL;
-  if (E.filename == NULL)
+  buffer* curr_buff = buffGetCurrentBuffer();
+  curr_buff->syntax = NULL;
+  if (curr_buff->filename == NULL)
     return;
 
-  char* ext = strrchr(E.filename, '.');
+  char* ext = strrchr(curr_buff->filename, '.');
 
   for (unsigned int j = 0; j < HLDB_ENTRIES; j++)
   {
@@ -193,14 +196,14 @@ syntaxSelectHighlight()
     {
       int is_ext = (s->filematch[i][0] == '.');
       if ((is_ext && ext && !strcmp(ext, s->filematch[i])) ||
-          (!is_ext && strstr(E.filename, s->filematch[i])))
+          (!is_ext && strstr(curr_buff->filename, s->filematch[i])))
       {
-        E.syntax = s;
+        curr_buff->syntax = s;
 
         int filerow;
-        for (filerow = 0; filerow < E.numrows; filerow++)
+        for (filerow = 0; filerow < curr_buff->numrows; filerow++)
         {
-          syntaxUpdate(&E.row[filerow]);
+          syntaxUpdate(&curr_buff->row[filerow]);
         }
         return;
       }

@@ -1,6 +1,7 @@
 #include "proto/output.h"
 #include "internal/ansi.h"
 #include "internal/append.h"
+#include "internal/buffer.h"
 #include "internal/state.h"
 #include "internal/syntax_highlighting.h"
 
@@ -14,12 +15,13 @@
 static void
 drawWelcomeBanner(struct abuf* ab)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   char welcome[STATUS_BUFFER_SIZE];
   int welcomelen = snprintf(
       welcome, sizeof(welcome), "Kilo editor -- version %s", TXTM_VERSION);
-  if (welcomelen > E.screencols)
-    welcomelen = E.screencols;
-  int padding = (E.screencols - welcomelen) / 2;
+  if (welcomelen > curr_buff->buffcols)
+    welcomelen = curr_buff->buffcols;
+  int padding = (curr_buff->buffcols - welcomelen) / 2;
   if (padding)
   {
     abAppend(ab, "~", 1);
@@ -90,13 +92,14 @@ drawChar(struct abuf* ab, char c, int char_color)
 static void
 drawRows(struct abuf* ab)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   int row_index;
-  for (row_index = 0; row_index < E.screenrows; row_index++)
+  for (row_index = 0; row_index < curr_buff->buffrows; row_index++)
   {
-    int filerow = row_index + E.rowoff;
-    if (filerow >= E.numrows)
+    int filerow = row_index + curr_buff->rowoff;
+    if (filerow >= curr_buff->numrows)
     {
-      if (E.numrows == 0 && row_index == E.screenrows / 3)
+      if (curr_buff->numrows == 0 && row_index == curr_buff->buffrows / 3)
       {
         drawWelcomeBanner(ab);
       }
@@ -107,13 +110,13 @@ drawRows(struct abuf* ab)
     }
     else
     {
-      int len = E.row[filerow].rsize - E.coloff;
+      int len = curr_buff->row[filerow].rsize - curr_buff->coloff;
       if (len < 0)
         len = 0;
-      if (len > E.screencols)
-        len = E.screencols;
-      char* render_char = &E.row[filerow].render[E.coloff];
-      unsigned char* hl = &E.row[filerow].hl[E.coloff];
+      if (len > curr_buff->buffcols)
+        len = curr_buff->buffcols;
+      char* render_char = &curr_buff->row[filerow].render[curr_buff->coloff];
+      unsigned char* hl = &curr_buff->row[filerow].hl[curr_buff->coloff];
       int current_color = -1;
       int col_index;
       for (col_index = 0; col_index < len; col_index++)
@@ -130,26 +133,27 @@ drawRows(struct abuf* ab)
 static void
 drawStatusBar(struct abuf* ab)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   abAppend(ab, ANSI_SWAP_FG_BG, sizeof(ANSI_SWAP_FG_BG));
   char status[STATUS_BUFFER_SIZE], rstatus[STATUS_BUFFER_SIZE];
   int len = snprintf(status,
                      sizeof(status),
                      "%.20s - %d lines %s",
-                     E.filename ? E.filename : "[No Name]",
-                     E.numrows,
-                     E.dirty ? "(modified)" : "");
+                     curr_buff->filename ? curr_buff->filename : "[No Name]",
+                     curr_buff->numrows,
+                     curr_buff->dirty ? "(modified)" : "");
   int rlen = snprintf(rstatus,
                       sizeof(rstatus),
                       "%s | %d/%d",
-                      E.syntax ? E.syntax->filetype : "no ft",
-                      E.cy + 1,
-                      E.numrows);
-  if (len > E.screencols)
-    len = E.screencols;
+                      curr_buff->syntax ? curr_buff->syntax->filetype : "no ft",
+                      curr_buff->cy + 1,
+                      curr_buff->numrows);
+  if (len > curr_buff->buffcols)
+    len = curr_buff->buffcols;
   abAppend(ab, status, len);
-  while (len < E.screencols)
+  while (len < curr_buff->buffcols)
   {
-    if (E.screencols - len == rlen)
+    if (curr_buff->buffcols - len == rlen)
     {
       abAppend(ab, rstatus, rlen);
       break;
@@ -167,10 +171,11 @@ drawStatusBar(struct abuf* ab)
 static void
 drawMessageBar(struct abuf* ab)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   abAppend(ab, ANSI_CLEAR_LINE, sizeof(ANSI_CLEAR_LINE));
   int msglen = strlen(E.statusmsg);
-  if (msglen > E.screencols)
-    msglen = E.screencols;
+  if (msglen > curr_buff->buffcols)
+    msglen = curr_buff->buffcols;
   if (msglen && time(NULL) - E.statusmsg_time < 5)
     abAppend(ab, E.statusmsg, msglen);
 }
@@ -178,12 +183,13 @@ drawMessageBar(struct abuf* ab)
 static void
 setCursorPos(struct abuf* ab)
 {
+  buffer* curr_buff = buffGetCurrentBuffer();
   char buf[CURSOR_POS_BUFFER];
   snprintf(buf,
            sizeof(buf),
            ANSI_CURSOR_POS,
-           (E.cy - E.rowoff) + 1,
-           (E.rx - E.coloff) + 1);
+           (curr_buff->cy - curr_buff->rowoff) + 1,
+           (curr_buff->rx - curr_buff->coloff) + 1);
   abAppend(ab, buf, strlen(buf));
 }
 
@@ -191,27 +197,28 @@ setCursorPos(struct abuf* ab)
 void
 outputScroll()
 {
-  E.rx = 0;
-  if (E.cy < E.numrows)
+  buffer* curr_buff = buffGetCurrentBuffer();
+  curr_buff->rx = 0;
+  if (curr_buff->cy < curr_buff->numrows)
   {
-    E.rx = rowCxToRx((&E.row[E.cy]), E.cx);
+    curr_buff->rx = rowCxToRx((&curr_buff->row[curr_buff->cy]), curr_buff->cx);
   }
 
-  if (E.cy < E.rowoff)
+  if (curr_buff->cy < curr_buff->rowoff)
   {
-    E.rowoff = E.cy;
+    curr_buff->rowoff = curr_buff->cy;
   }
-  if (E.cy >= E.rowoff + E.screenrows)
+  if (curr_buff->cy >= curr_buff->rowoff + curr_buff->buffrows)
   {
-    E.rowoff = E.cy - E.screenrows + 1;
+    curr_buff->rowoff = curr_buff->cy - curr_buff->buffrows + 1;
   }
-  if (E.rx < E.coloff)
+  if (curr_buff->rx < curr_buff->coloff)
   {
-    E.coloff = E.rx;
+    curr_buff->coloff = curr_buff->rx;
   }
-  if (E.rx >= E.coloff + E.screencols)
+  if (curr_buff->rx >= curr_buff->coloff + curr_buff->buffcols)
   {
-    E.coloff = E.rx - E.screencols + 1;
+    curr_buff->coloff = curr_buff->rx - curr_buff->buffcols + 1;
   }
 }
 
