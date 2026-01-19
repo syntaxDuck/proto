@@ -1,7 +1,10 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 #import "filetypes.h"
+#import "internal/change_stack.h"
 #import "row.h"
+
+#define DEFAULT_CHANGE_STACK_SIZE 100
 
 typedef struct buffer
 {
@@ -18,6 +21,8 @@ typedef struct buffer
   erow* row;
   erow* rows;
   syntax* syntax;
+  cstack* undo_stack;
+  cstack* redo_stack;
 } buffer;
 
 buffer* buffInit();

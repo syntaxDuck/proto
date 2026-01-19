@@ -3,8 +3,10 @@
 #include "internal/state.h"
 #include "internal/syntax_highlighting.h"
 
+#include <stdlib.h>
 #include <string.h>
 
+// TODO: Decouple buffer state from row operaitons
 static void
 updateRow(erow* row)
 {
@@ -48,7 +50,7 @@ updateRow(erow* row)
 }
 
 static void
-freeRow(erow* row)
+clearRow(erow* row)
 {
   free(row->render);
   free(row->chars);
@@ -64,7 +66,7 @@ delRow(int at)
   buffer* curr_buff = buffGetCurrentBuffer();
   if (at < 0 || at >= curr_buff->numrows)
     return;
-  freeRow(&curr_buff->row[at]);
+  clearRow(&curr_buff->row[at]);
   memmove(&curr_buff->row[at],
           &curr_buff->row[at + 1],
           sizeof(erow) * (curr_buff->numrows - at - 1));
@@ -237,4 +239,73 @@ rowDelChar()
     delRow(curr_buff->cy);
     curr_buff->cy--;
   }
+}
+
+erow*
+rowCopyRow(erow* row)
+{
+  if (!row)
+    return NULL;
+
+  erow* row_cpy = malloc(sizeof(erow));
+  if (!row_cpy)
+    return NULL;
+
+  row_cpy->chars = NULL;
+  row_cpy->render = NULL;
+  row_cpy->hl = NULL;
+
+  row_cpy->idx = row->idx;
+  row_cpy->size = row->size;
+  row_cpy->rsize = row->rsize;
+  row_cpy->hl_open_comment = row->hl_open_comment;
+
+  if (row->chars && row->size >= 0)
+  {
+    row_cpy->chars = malloc(row->size + 1);
+    if (!row_cpy->chars)
+    {
+      free(row_cpy);
+      return NULL;
+    }
+    memcpy(row_cpy->chars, row->chars, row->size + 1);
+  }
+
+  if (row->render && row->rsize >= 0)
+  {
+    row_cpy->render = malloc(row->rsize + 1);
+    if (!row_cpy->render)
+    {
+      free(row_cpy->chars);
+      free(row_cpy);
+      return NULL;
+    }
+    memcpy(row_cpy->render, row->render, row->rsize + 1);
+  }
+
+  if (row->hl && row->rsize > 0)
+  {
+    row_cpy->hl = malloc(row->rsize);
+    if (!row_cpy->hl)
+    {
+      free(row_cpy->chars);
+      free(row_cpy->render);
+      free(row_cpy);
+      return NULL;
+    }
+    memcpy(row_cpy->hl, row->hl, row->rsize);
+  }
+
+  return row_cpy;
+}
+
+void
+freeRow(erow* row)
+{
+  if (!row)
+    return;
+  free(row->render);
+  free(row->chars);
+  free(row->hl);
+  free(row);
 }

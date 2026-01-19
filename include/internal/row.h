@@ -20,5 +20,7 @@ void rowInsertRow(int at, char* s, size_t len);
 void rowInsertNewline();
 void rowInsertChar(int c);
 void rowDelChar();
+erow* rowCopyRow(erow* row);
+void freeRow(erow* row);
 
 #endif

@@ -1,6 +1,6 @@
 #ifndef WINDOW_H
   #define WINDOW_H
-// TODO: Define widnow
+// TODO: Define window
 typedef struct window
 {
 
